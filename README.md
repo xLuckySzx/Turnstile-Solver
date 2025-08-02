@@ -33,8 +33,8 @@ A Python-based Turnstile solver using the patchright library, featuring multi-th
 
 ---
 
-### ❓ Need custom solution ?
-- Need custom solution like Cloudflare Interstitial ? Contact me on telegram:
+### ❓ Looking for a Cheap or Custom CAPTCHA Solution?
+- Need cheap captcha solution as low as 0.1$ per 1k ? Contact me on Telegram:
 
   <a href="https://t.me/tlb_sh">
     <img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white"/>
