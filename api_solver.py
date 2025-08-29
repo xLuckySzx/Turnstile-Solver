@@ -197,7 +197,16 @@ class TurnstileAPIServer:
                 logger.debug(f"Browser {index}: Setting up page data and route")
 
             url_with_slash = url + "/" if not url.endswith("/") else url
-            turnstile_div = f'<div class="cf-turnstile" style="background: white;" data-sitekey="{sitekey}"' + (f' data-action="{action}"' if action else '') + (f' data-cdata="{cdata}"' if cdata else '') + '></div>'
+            turnstile_div = (
+                f'<div id="cf-turnstile" class="cf-turnstile" style="background: white;" '
+                f'data-sitekey="{sitekey}"'
+                + (f' data-action="{action}"' if action else '')
+                + (f' data-cdata="{cdata}"' if cdata else '')
+                + '></div>'
+                '<script>'
+                'turnstile.render("#cf-turnstile", { sitekey: "' + sitekey + '" });'
+                '</script>'
+            )
             page_data = self.HTML_TEMPLATE.replace("<!-- cf turnstile -->", turnstile_div)
 
             await page.route(url_with_slash, lambda route: route.fulfill(body=page_data, status=200))
