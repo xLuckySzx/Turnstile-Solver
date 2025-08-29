@@ -52,34 +52,6 @@ logger.addHandler(handler)
 
 
 class TurnstileAPIServer:
-    HTML_TEMPLATE = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Turnstile Solver</title>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>
-        <script>
-            async function fetchIP() {
-                try {
-                    const response = await fetch('https://api64.ipify.org?format=json');
-                    const data = await response.json();
-                    document.getElementById('ip-display').innerText = `Your IP: ${data.ip}`;
-                } catch (error) {
-                    console.error('Error fetching IP:', error);
-                    document.getElementById('ip-display').innerText = 'Failed to fetch IP';
-                }
-            }
-            window.onload = fetchIP;
-        </script>
-    </head>
-    <body>
-        <!-- cf turnstile -->
-        <p id="ip-display">Fetching your IP...</p>
-    </body>
-    </html>
-    """
 
     def __init__(self, headless: bool, useragent: str, debug: bool, browser_type: str, thread: int, proxy_support: bool):
         self.app = Quart(__name__)
@@ -244,7 +216,8 @@ class TurnstileAPIServer:
                         self.results[task_id] = {"value": turnstile_check, "elapsed_time": elapsed_time}
                         self._save_results()
                         break
-                except:
+                except Exception as e:
+                    logger.info(f"Exception occurred while trying to solve {e}")
                     pass
 
             if self.results.get(task_id) == "CAPTCHA_NOT_READY":
