@@ -184,7 +184,7 @@ class TurnstileAPIServer:
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
-            await page.eval_on_selector(f"div#cf-turnstile", "el => el.style.width = '70px'")
+            await page.eval_on_selector(f"//div[@id='cf-turnstile']", "el => el.style.width = '70px'")
 
             if self.debug:
                 logger.debug(f"Browser {index}: Starting Turnstile response retrieval loop")
@@ -196,7 +196,7 @@ class TurnstileAPIServer:
                         if self.debug:
                             logger.debug(f"Browser {index}: Attempt {_} - No Turnstile response yet")
                         
-                        await page.locator(f"div#cf-turnstile").click(timeout=1000)
+                        await page.locator(f"//div[@id='cf-turnstile']").click(timeout=1000)
                         await asyncio.sleep(0.5)
                     else:
                         elapsed_time = round(time.time() - start_time, 3)
