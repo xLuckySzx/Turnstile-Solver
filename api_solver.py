@@ -178,25 +178,27 @@ class TurnstileAPIServer:
                     div.id = 'cf-turnstile';
                     div.className = 'cf-turnstile';
                     div.dataset.sitekey = '{sitekey}';
-                    div.dataset.is-injected = 'true';
+                    div.dataset.isInjected = 'true';  // evita trattini, usa camelCase
                     document.body.appendChild(div);
                 }} else {{
                     // Se esiste già, aggiorna solo il sitekey
                     div.dataset.sitekey = '{sitekey}';
-                    div.dataset.is-injected = 'true';
+                    div.dataset.isInjected = 'true';
                 }}
 
-                const script = document.createElement('script');
-                script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-                script.async = true;
-                script.defer = true;
-                document.body.appendChild(script);
+                if (!document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]')) {{
+                    const script = document.createElement('script');
+                    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+                    script.async = true;
+                    script.defer = true;
+                    document.body.appendChild(script);
+                }}
             """)
             
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
-            await page.eval_on_selector(f"div#cf-turnstile[data-is-injected='true']", "el => el.style.width = '70px'")
+            await page.eval_on_selector(f"div#cf-turnstile[data-isInjected='true']", "el => el.style.width = '70px'")
 
             if self.debug:
                 logger.debug(f"Browser {index}: Starting Turnstile response retrieval loop")
@@ -208,7 +210,7 @@ class TurnstileAPIServer:
                         if self.debug:
                             logger.debug(f"Browser {index}: Attempt {_} - No Turnstile response yet")
                         
-                        await page.locator(f"div#cf-turnstile[data-is-injected='true']").click(timeout=1000)
+                        await page.locator(f"div#cf-turnstile[data-isInjected='true']").click(timeout=1000)
                         await asyncio.sleep(0.5)
                     else:
                         elapsed_time = round(time.time() - start_time, 3)
