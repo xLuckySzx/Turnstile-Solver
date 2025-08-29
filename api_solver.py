@@ -197,25 +197,32 @@ class TurnstileAPIServer:
                 logger.debug(f"Browser {index}: Setting up page data and route")
 
             url_with_slash = url + "/" if not url.endswith("/") else url
-            turnstile_div = (
-                f'<div id="cf-turnstile" class="cf-turnstile" style="background: white;" '
-                f'data-sitekey="{sitekey}"'
-                + (f' data-action="{action}"' if action else '')
-                + (f' data-cdata="{cdata}"' if cdata else '')
-                + '></div>'
-                '<script>'
-                'turnstile.render("#cf-turnstile", { sitekey: "' + sitekey + '" });'
-                '</script>'
-            )
-            page_data = self.HTML_TEMPLATE.replace("<!-- cf turnstile -->", turnstile_div)
-
-            await page.route(url_with_slash, lambda route: route.fulfill(body=page_data, status=200))
             await page.goto(url_with_slash)
 
+            await page.evaluate(f"""
+                let div = document.getElementById('cf-turnstile');
+                if (!div) {{
+                    div = document.createElement('div');
+                    div.id = 'cf-turnstile';
+                    div.className = 'cf-turnstile';
+                    div.dataset.sitekey = '{sitekey}';
+                    document.body.appendChild(div);
+                }} else {{
+                    // Se esiste già, aggiorna solo il sitekey
+                    div.dataset.sitekey = '{sitekey}';
+                }}
+
+                const script = document.createElement('script');
+                script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+                script.async = true;
+                script.defer = true;
+                document.body.appendChild(script);
+            """)
+            
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
-            await page.eval_on_selector("//div[@class='cf-turnstile']", "el => el.style.width = '70px'")
+            await page.eval_on_selector("//div[@id='cf-turnstile']", "el => el.style.width = '70px'")
 
             if self.debug:
                 logger.debug(f"Browser {index}: Starting Turnstile response retrieval loop")
@@ -227,7 +234,7 @@ class TurnstileAPIServer:
                         if self.debug:
                             logger.debug(f"Browser {index}: Attempt {_} - No Turnstile response yet")
                         
-                        await page.locator("//div[@class='cf-turnstile']").click(timeout=1000)
+                        await page.locator("//div[@id='cf-turnstile']").click(timeout=1000)
                         await asyncio.sleep(0.5)
                     else:
                         elapsed_time = round(time.time() - start_time, 3)
