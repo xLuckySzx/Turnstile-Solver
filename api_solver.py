@@ -209,7 +209,7 @@ class TurnstileAPIServer:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
             
-            await page.eval_on_selector(f"#puppet-cf-turnstile", "el => el.style.width = '70px'")
+            await page.eval_on_selector(f"//div[@id='puppet-cf-turnstile']", "el => el.style.width = '70px'")
 
             # await page.wait_for_selector('[name="cf-turnstile-response"]', state="attached", timeout=15000)
             if self.debug:
@@ -222,7 +222,7 @@ class TurnstileAPIServer:
                         if self.debug:
                             logger.debug(f"Browser {index}: Attempt {_} - No Turnstile response yet")
                         
-                        await page.locator(f"#puppet-cf-turnstile").click(timeout=1000)
+                        await page.locator(f"//div[@id='puppet-cf-turnstile']").click(timeout=1000)
                         await asyncio.sleep(0.5)
                     else:
                         elapsed_time = round(time.time() - start_time, 3)
