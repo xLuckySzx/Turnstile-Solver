@@ -177,6 +177,7 @@ class TurnstileAPIServer:
                         if (!document.getElementById('puppet-cf-turnstile')) {
                             const div = document.createElement('div');
                             div.id = 'puppet-cf-turnstile';
+                            div.setAttribute("class", "cf-turnstile");
                             document.body.appendChild(div);
                         }
                         window.turnstile.render('#puppet-cf-turnstile', {
@@ -207,9 +208,10 @@ class TurnstileAPIServer:
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
-            await page.wait_for_selector('[name="cf-turnstile-response"]', state="attached", timeout=15000)
+            
             await page.eval_on_selector(f"#puppet-cf-turnstile", "el => el.style.width = '70px'")
 
+            # await page.wait_for_selector('[name="cf-turnstile-response"]', state="attached", timeout=15000)
             if self.debug:
                 logger.debug(f"Browser {index}: Starting Turnstile response retrieval loop")
 
