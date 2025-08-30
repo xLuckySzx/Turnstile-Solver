@@ -207,7 +207,7 @@ class TurnstileAPIServer:
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
-            await page.wait_for_selector("#puppet-cf-turnstile", timeout=10000)
+            await page.wait_for_selector('[name="cf-turnstile-response"]', timeout=15000)
             await page.eval_on_selector(f"#puppet-cf-turnstile", "el => el.style.width = '70px'")
 
             if self.debug:
