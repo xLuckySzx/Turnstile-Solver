@@ -173,6 +173,7 @@ class TurnstileAPIServer:
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
+            await page.wait_for_selector('[name=cf-turnstile-response]', timeout=15000)
             await page.eval_on_selector(f"{cf_selector}", "el => el.style.width = '70px'")
 
             # await page.wait_for_selector('[name="cf-turnstile-response"]', state="attached", timeout=15000)
