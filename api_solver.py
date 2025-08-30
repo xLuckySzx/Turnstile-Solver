@@ -58,7 +58,7 @@ class TurnstileAPIServer:
         self.debug = debug
         self.results = self._load_results()
         self.browser_type = browser_type
-        self.headless = headless
+        self.headless = False # headless
         self.useragent = useragent
         self.thread_count = thread
         self.proxy_support = proxy_support
@@ -91,7 +91,7 @@ class TurnstileAPIServer:
     def _setup_routes(self) -> None:
         """Set up the application routes."""
         self.app.before_serving(self._startup)
-        self.app.route('/turnstile', methods=['GET'])(self.process_turnstile)
+        self.app.route('/turnstile', methods=['POST'])(self.process_turnstile)
         self.app.route('/result', methods=['GET'])(self.get_result)
         self.app.route('/')(self.index)
 
@@ -131,7 +131,7 @@ class TurnstileAPIServer:
         logger.success(f"Browser pool initialized with {self.browser_pool.qsize()} browsers")
 
 
-    async def _solve_turnstile(self, task_id: str, url: str, sitekey: str, action: str = None, cdata: str = None):
+    async def _solve_turnstile(self, cf_selector: str, task_id: str, url: str, sitekey: str, action: str = None, cdata: str = None):
         """Solve the Turnstile challenge."""
         proxy = None
 
@@ -168,48 +168,12 @@ class TurnstileAPIServer:
                 logger.debug(f"Browser {index}: Starting Turnstile solve for URL: {url} with Sitekey: {sitekey} | Proxy: {proxy}")
                 logger.debug(f"Browser {index}: Setting up page data and route")
 
-            url_with_slash = url + "/" if not url.endswith("/") else url
-            await page.goto(url_with_slash)
+            await page.goto(url)
 
-            await page.evaluate(
-                """({sitekey, action, cdata}) => {
-                    function renderTurnstile() {
-                        if (!document.getElementById('puppet-cf-turnstile')) {
-                            const div = document.createElement('div');
-                            div.id = 'puppet-cf-turnstile';
-                            div.setAttribute("class", "cf-turnstile");
-                            document.body.appendChild(div);
-                        }
-                        window.turnstile.render('#puppet-cf-turnstile', {
-                            sitekey: sitekey,
-                            action: action || "",
-                            cData: cdata || ""
-                        });
-                    }
-
-                    if (!window.turnstile) {
-                        // Inietta lo script solo se non già presente
-                        const script = document.createElement('script');
-                        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-                        script.async = true;
-                        script.defer = true;
-                        script.onload = renderTurnstile;
-                        document.body.appendChild(script);
-                    } else {
-                        renderTurnstile();
-                    }
-                }""",
-                {
-                    "sitekey": sitekey,
-                    "action": action,
-                    "cdata": cdata,
-                }
-            )
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
-            
-            await page.eval_on_selector(f"//div[@id='puppet-cf-turnstile']", "el => el.style.width = '70px'")
+            await page.eval_on_selector(f"{cf_selector}", "el => el.style.width = '70px'")
 
             # await page.wait_for_selector('[name="cf-turnstile-response"]', state="attached", timeout=15000)
             if self.debug:
@@ -221,8 +185,8 @@ class TurnstileAPIServer:
                     if turnstile_check == "":
                         if self.debug:
                             logger.debug(f"Browser {index}: Attempt {_} - No Turnstile response yet")
-                        
-                        await page.locator(f"//div[@id='puppet-cf-turnstile']").click(timeout=1000)
+
+                        await page.locator(f"{cf_selector}").click(timeout=1000)
                         await asyncio.sleep(0.5)
                     else:
                         elapsed_time = round(time.time() - start_time, 3)
@@ -255,11 +219,14 @@ class TurnstileAPIServer:
 
     async def process_turnstile(self):
         """Handle the /turnstile endpoint requests."""
-        url = request.args.get('url')
-        sitekey = request.args.get('sitekey')
-        action = request.args.get('action')
-        cdata = request.args.get('cdata')
 
+        data = await request.get_json()
+        url = data.get("url")
+        cf_selector = data.get("cf_selector")
+        sitekey = data.get("sitekey")
+        action = data.get("action")
+        cdata = data.get("cdata")
+        
         if not url or not sitekey:
             return jsonify({
                 "status": "error",
@@ -270,7 +237,7 @@ class TurnstileAPIServer:
         self.results[task_id] = "CAPTCHA_NOT_READY"
 
         try:
-            asyncio.create_task(self._solve_turnstile(task_id=task_id, url=url, sitekey=sitekey, action=action, cdata=cdata))
+            asyncio.create_task(self._solve_turnstile(cf_selector=cf_selector, task_id=task_id, url=url, sitekey=sitekey, action=action, cdata=cdata))
 
             if self.debug:
                 logger.debug(f"Request completed with taskid {task_id}.")
