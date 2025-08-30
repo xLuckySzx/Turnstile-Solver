@@ -173,16 +173,30 @@ class TurnstileAPIServer:
 
             await page.evaluate(
                 """({sitekey, action, cdata}) => {
-                    if (!document.getElementById('puppet-cf-turnstile')) {
-                        const div = document.createElement('div');
-                        div.id = 'puppet-cf-turnstile';
-                        document.body.appendChild(div);
+                    function renderTurnstile() {
+                        if (!document.getElementById('puppet-cf-turnstile')) {
+                            const div = document.createElement('div');
+                            div.id = 'puppet-cf-turnstile';
+                            document.body.appendChild(div);
+                        }
+                        window.turnstile.render('#puppet-cf-turnstile', {
+                            sitekey: sitekey,
+                            action: action || "",
+                            cData: cdata || ""
+                        });
                     }
-                    window.turnstile.render('#puppet-cf-turnstile', {
-                        sitekey: sitekey,
-                        action: action || "",
-                        cData: cdata || ""
-                    });
+
+                    if (!window.turnstile) {
+                        // Inietta lo script solo se non già presente
+                        const script = document.createElement('script');
+                        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+                        script.async = true;
+                        script.defer = true;
+                        script.onload = renderTurnstile;
+                        document.body.appendChild(script);
+                    } else {
+                        renderTurnstile();
+                    }
                 }""",
                 {
                     "sitekey": sitekey,
@@ -190,7 +204,6 @@ class TurnstileAPIServer:
                     "cdata": cdata,
                 }
             )
-            
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
 
