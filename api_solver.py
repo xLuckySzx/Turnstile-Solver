@@ -186,7 +186,7 @@ class TurnstileAPIServer:
                         if self.debug:
                             logger.debug(f"Browser {index}: Attempt {_} - No Turnstile response yet")
 
-                        await page.locator(f"{cf_selector}").click(timeout=1000)
+                        await page.locator(f"{cf_selector}").click(timeout=5000)
                         await asyncio.sleep(0.5)
                     else:
                         elapsed_time = round(time.time() - start_time, 3)
