@@ -171,15 +171,25 @@ class TurnstileAPIServer:
             url_with_slash = url + "/" if not url.endswith("/") else url
             await page.goto(url_with_slash)
 
-            await page.evaluate(f"""
-                if (!document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]')) {{
-                    const script = document.createElement('script');
-                    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-                    script.async = true;
-                    script.defer = true;
-                    document.body.appendChild(script);
-                }}
-            """)
+            await page.evaluate(
+                """({sitekey, action, cdata}) => {
+                    if (!document.getElementById('puppet-cf-turnstile')) {
+                        const div = document.createElement('div');
+                        div.id = 'puppet-cf-turnstile';
+                        document.body.appendChild(div);
+                    }
+                    window.turnstile.render('#puppet-cf-turnstile', {
+                        sitekey: sitekey,
+                        action: action || "",
+                        cData: cdata || ""
+                    });
+                }""",
+                {
+                    "sitekey": sitekey,
+                    "action": action,
+                    "cdata": cdata,
+                }
+            )
             
             if self.debug:
                 logger.debug(f"Browser {index}: Setting up Turnstile widget dimensions")
